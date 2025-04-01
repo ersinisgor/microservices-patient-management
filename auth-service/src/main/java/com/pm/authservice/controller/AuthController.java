@@ -34,5 +34,4 @@ public class AuthController {
         String token = tokenOptional.get();
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
-
 }
