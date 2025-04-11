@@ -22,6 +22,7 @@ public class AuthIntegrationTest {
           }
         """;
 
+
         Response response = given()
                 .contentType("application/json")
                 .body(loginPayload)
