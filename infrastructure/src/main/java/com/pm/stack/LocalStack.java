@@ -1,16 +1,16 @@
 package com.pm.stack;
 
 import software.amazon.awscdk.*;
-import software.amazon.awscdk.services.ec2.InstanceClass;
-import software.amazon.awscdk.services.ec2.InstanceSize;
-import software.amazon.awscdk.services.ec2.InstanceType;
-import software.amazon.awscdk.services.ec2.Vpc;
+import software.amazon.awscdk.services.ec2.*;
+import software.amazon.awscdk.services.msk.CfnCluster;
 import software.amazon.awscdk.services.rds.Credentials;
 import software.amazon.awscdk.services.rds.DatabaseInstance;
 import software.amazon.awscdk.services.rds.DatabaseInstanceEngine;
 import software.amazon.awscdk.services.rds.PostgresEngineVersion;
 import software.amazon.awscdk.services.rds.PostgresInstanceEngineProps;
 import software.amazon.awscdk.services.route53.CfnHealthCheck;
+
+import java.util.stream.Collectors;
 
 public class LocalStack extends Stack {
     private final Vpc vpc;
@@ -31,6 +31,8 @@ public class LocalStack extends Stack {
 
         CfnHealthCheck patientDbHealthCheck =
                 createDbHealthCheck(patientServiceDb, "PatientServiceDBHealthCheck");
+
+        CfnCluster mskCluster = createMskCluster();
 
     }
 
@@ -66,6 +68,21 @@ public class LocalStack extends Stack {
                         .ipAddress(db.getDbInstanceEndpointAddress())
                         .requestInterval(30)
                         .failureThreshold(3)
+                        .build())
+                .build();
+    }
+
+    private CfnCluster createMskCluster(){
+        return CfnCluster.Builder.create(this, "MskCluster")
+                .clusterName("kafa-cluster")
+                .kafkaVersion("2.8.0")
+                .numberOfBrokerNodes(1)
+                .brokerNodeGroupInfo(CfnCluster.BrokerNodeGroupInfoProperty.builder()
+                        .instanceType("kafka.m5.xlarge")
+                        .clientSubnets(vpc.getPrivateSubnets().stream()
+                                .map(ISubnet::getSubnetId)
+                                .collect(Collectors.toList()))
+                        .brokerAzDistribution("DEFAULT")
                         .build())
                 .build();
     }
